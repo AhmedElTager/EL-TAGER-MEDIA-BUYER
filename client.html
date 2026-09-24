@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>حماية قناتك — التاجر ميديا باير</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#667085;--line:#e5e7eb;--primary:#2563eb;--success:#16a34a;--danger:#dc2626;--dark:#101828}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Tahoma,sans-serif}.wrap{max-width:620px;margin:0 auto;padding:22px 15px 45px}.brand{text-align:center;font-weight:900;font-size:22px;margin:10px 0 18px}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 8px 28px rgba(16,24,40,.06)}.hero{background:linear-gradient(135deg,#172554,#2563eb);color:#fff;border-radius:18px;padding:22px;margin-bottom:16px}.hero h1{margin:0 0 8px;font-size:23px}.hero p{margin:0;color:#dbeafe;line-height:1.8;font-size:13px}.step{display:none}.step.active{display:block}.field{display:flex;flex-direction:column;gap:7px;margin:14px 0}.field label{font-weight:800;font-size:13px}input{width:100%;border:1px solid #d0d5dd;border-radius:11px;padding:13px;outline:none;font-size:15px}input:focus{border-color:#84a8ff;box-shadow:0 0 0 3px #eef4ff}.btn{border:0;border-radius:11px;padding:12px 17px;font-weight:800;cursor:pointer}.primary{background:var(--primary);color:#fff}.gray{background:#f2f4f7;color:#344054}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.notice{background:#eff6ff;border:1px solid #dbeafe;color:#1e40af;padding:13px;border-radius:12px;line-height:1.8;font-size:13px}.warning{background:#fffbeb;border-color:#fde68a;color:#92400e}.success{background:#ecfdf3;border-color:#bbf7d0;color:#166534}.error{background:#fef2f2;border-color:#fecaca;color:#991b1b}.status{text-align:center;margin-top:14px;color:var(--muted);font-size:12px}.spinner{padding:18px;text-align:center;color:var(--muted)}.hidden{display:none!important}.footer{text-align:center;color:#98a2b3;font-size:11px;margin-top:20px}.timer{font-weight:800;color:#1d4ed8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">التاجر ميديا باير</div>
+  <div class="hero">
+    <h1>🛡️ حماية قناتك من إعلانات Telegram</h1>
+    <p>صفحة عميل خاصة. لا توجد هنا لوحة إدارة أو بيانات عملاء آخرين. الرابط صالح لمدة 24 ساعة فقط، ويُغلق تلقائيًا بعد نجاح العملية.</p>
+  </div>
+
+  <div class="card">
+    <div id="loading" class="spinner">⏳ جاري التحقق من صلاحية الرابط...</div>
+
+    <div id="app" class="hidden">
+      <div id="step1" class="step active">
+        <h2>1️⃣ تسجيل الدخول إلى Telegram</h2>
+        <div class="notice">أدخلي رقم الحساب الذي <b>يملك القناة</b>. سيتم استخدامه لتنفيذ العملية فقط، ولن يتم حفظ كود Telegram أو كلمة مرور التحقق بخطوتين.</div>
+        <div class="field"><label>رقم Telegram</label><input id="phone" type="tel" placeholder="مثال: +2010xxxxxxxx" autocomplete="tel"></div>
+        <div class="actions"><button class="btn primary" onclick="sendCode()">📩 إرسال الكود</button></div>
+      </div>
+
+      <div id="step2" class="step">
+        <h2>2️⃣ كود Telegram</h2>
+        <div id="codeHint" class="notice">تم إرسال كود تسجيل الدخول إلى Telegram.</div>
+        <div class="field"><label>الكود</label><input id="code" inputmode="numeric" placeholder="أدخلي الكود الذي وصلك من Telegram" autocomplete="one-time-code"></div>
+        <div id="passwordBox" class="field hidden"><label>كلمة مرور التحقق بخطوتين</label><input id="password" type="password" placeholder="كلمة مرور Telegram" autocomplete="current-password"></div>
+        <div class="actions"><button class="btn primary" onclick="verifyCode()">✅ متابعة</button><button class="btn gray" onclick="showStep(1)">رجوع</button></div>
+      </div>
+
+      <div id="step3" class="step">
+        <h2>3️⃣ رابط القناة</h2>
+        <div class="notice">أرسلي رابط دعوة القناة الخاصة. يجب أن يكون الحساب الذي سجلتِ به هو <b>مالك القناة</b>.</div>
+        <div class="field"><label>رابط القناة الخاصة</label><input id="channel" placeholder="https://t.me/+xxxxxxxxxxxxxxxx"></div>
+        <div class="actions"><button class="btn primary" onclick="runProtection()">🔎 فحص ثم منع الإعلانات</button></div>
+      </div>
+
+      <div id="result"></div>
+      <div id="timer" class="status"></div>
+    </div>
+  </div>
+  <div class="footer">التاجر ميديا باير © 2026</div>
+</div>
+<script>
+const qs=new URLSearchParams(location.search);const token=qs.get('token')||'';const api=(qs.get('api')||'').replace(/\/$/,'');
+const $=id=>document.getElementById(id);
+function showStep(n){document.querySelectorAll('.step').forEach(x=>x.classList.remove('active'));$('step'+n)?.classList.add('active')}
+function msg(text,kind='notice'){ $('result').innerHTML=`<div class="${kind}" style="margin-top:14px">${esc(text)}</div>` }
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+async function call(path,options={}){
+  if(!api)throw new Error('رابط السيرفر غير موجود داخل رابط العميل.');
+  const r=await fetch(api+path,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});
+  let d={};try{d=await r.json()}catch{}
+  if(!r.ok)throw new Error(d.detail||`HTTP ${r.status}`);return d;
+}
+async function init(){
+  if(!token){$('loading').innerHTML='<div class="error">🔴 رابط العميل غير مكتمل.</div>';return}
+  try{const d=await call('/client/'+encodeURIComponent(token)+'/status');$('loading').classList.add('hidden');$('app').classList.remove('hidden');updateTimer(d.expires_at)}
+  catch(e){$('loading').innerHTML=`<div class="error">🔴 ${esc(e.message)}</div>`}
+}
+let timerId;
+function updateTimer(iso){
+  clearInterval(timerId);const end=new Date(iso).getTime();
+  const tick=()=>{let sec=Math.max(0,Math.floor((end-Date.now())/1000));let h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);$('timer').textContent=`الرابط صالح لمدة 24 ساعة — المتبقي تقريبًا: ${h} ساعة و${m} دقيقة`;if(sec<=0){clearInterval(timerId);$('app').innerHTML='<div class="error">🔴 انتهت صلاحية الرابط.</div>'}};tick();timerId=setInterval(tick,30000)
+}
+async function sendCode(){
+  const phone=$('phone').value.trim();if(!phone){msg('اكتبي رقم Telegram أولًا','warning');return}
+  msg('⏳ جاري إرسال كود Telegram...');
+  try{await call('/client/'+encodeURIComponent(token)+'/send-code',{method:'POST',body:JSON.stringify({phone})});$('codeHint').textContent='تم إرسال الكود. لو الحساب عليه تحقق بخطوتين سيُطلب منكِ كلمة المرور في الخطوة التالية.';$('result').innerHTML='';showStep(2)}catch(e){msg(e.message,'error')}
+}
+async function verifyCode(){
+  const code=$('code').value.trim();const password=$('password').value;
+  if(!code){msg('اكتبي كود Telegram أولًا','warning');return}
+  msg('⏳ جاري التحقق...');
+  try{const d=await call('/client/'+encodeURIComponent(token)+'/verify',{method:'POST',body:JSON.stringify({code,password})});
+    if(d.two_factor_required){$('passwordBox').classList.remove('hidden');msg('🔐 الحساب عليه تحقق بخطوتين. اكتبي كلمة المرور ثم اضغطي متابعة مرة أخرى.','warning');return}
+    $('passwordBox').classList.add('hidden');$('result').innerHTML='';showStep(3);
+  }catch(e){msg(e.message,'error')}
+}
+async function runProtection(){
+  const channel=$('channel').value.trim();if(!channel){msg('اكتبي رابط القناة أولًا','warning');return}
+  msg('⏳ جاري فحص القناة والصلاحيات ثم تنفيذ منع الإعلانات...');
+  try{const d=await call('/client/'+encodeURIComponent(token)+'/run',{method:'POST',body:JSON.stringify({channel})});
+    $('step3').classList.remove('active');
+    $('result').innerHTML=`<div class="success"><h2 style="margin-top:0">✅ تمت العملية بنجاح</h2><div><b>القناة:</b> ${esc(d.channel?.title||channel)}</div><div style="margin-top:7px">🛡️ تم تفعيل منع Sponsored Messages.</div><div style="margin-top:7px">يمكن إغلاق الصفحة الآن. هذا الرابط تم استخدامه وانتهى.</div></div>`;
+    $('timer').textContent='';clearInterval(timerId);
+  }catch(e){msg(e.message,'error')}
+}
+init();
+</script>
+</body>
+</html>
